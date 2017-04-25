@@ -48,6 +48,7 @@ class AlexaClient(object):
         url = "https://api.amazon.com/auth/o2/token"
         res = requests.post(url, data=payload)
         res_json = json.loads(res.text)
+        print(res_json)
         self._token = res_json['access_token']
         return self._token
 
@@ -109,18 +110,22 @@ class AlexaClient(object):
                 for v in res.headers['content-type'].split(";"):
                     if re.match('.*boundary.*', v):
                         boundary =  v.split("=")[1]
-                response_data = res.content.split(boundary)
+                print('boundary', boundary)
+                #print('res.content', res.content)
+                #resCont = res.content.decode('utf8')
+                response_data = res.content.split(boundary.encode('utf8'))
+                #response_data = resCont.split(boundary)
                 audio = None
                 for d in response_data:
                     if (len(d) >= 1024):
-                        audio = d.split('\r\n\r\n')[1].rstrip('--')
+                        audio = d.split(b'\r\n\r\n')[1].rstrip(b'--')
                 if audio is None:
                     raise RuntimeError("Failed to save response audio")
                 f.write(audio)
                 return save_to
             # Raise exception for the HTTP status code
-            print "AVS returned error: Status: {}, Text: {}".format(
-                res.status_code, res.text)
+            print ("AVS returned error: Status: {}, Text: {}".format(
+                res.status_code, res.text))
             res.raise_for_status()
 
     def ask(self, audio_file, save_to=None):
@@ -136,18 +141,18 @@ class AlexaClient(object):
         Returns:
             File path for the response audio file (str).
         """
-        with open(audio_file) as in_f:
+        with open(audio_file, 'rb') as in_f:
             url, headers, request_data = self.get_request_params()
             files = [
-                (
-                    'file',
-                    (
-                        'request', json.dumps(request_data),
-                        'application/json; charset=UTF-8',
-                    )
-                ),
-                ('file', ('audio', in_f, 'audio/L16; rate=16000; channels=1'))
+                ('file'
+                  , ('request', json.dumps(request_data), 'application/json; charset=UTF-8', )),
+                ('file'
+                  , ('audio', in_f, 'audio/L16; rate=16000; channels=1'))
             ]
+            print('url', type(url))
+            print('headers', type(headers))
+            print('files', type(files))
+            print('request_data', type(request_data))
             res = requests.post(url, headers=headers, files=files)
             # Check for HTTP 403
             if res.status_code == 403:
@@ -226,7 +231,7 @@ class AlexaClient(object):
                 saved_filenames.append(save_to)
             return saved_filenames
         except Exception as e:
-            print str(e)
+            print (str(e))
         finally:
             # Close all file handlers
             for f in files_to_close:

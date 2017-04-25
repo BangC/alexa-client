@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 import json
 import os
-import urllib
+import urllib.parse
 import cherrypy
 import requests
 from alexa_client.settings import DEVICE_TYPE_ID, CLIENT_ID, CLIENT_SECRET 
@@ -14,7 +14,7 @@ class Start(object):
             "alexa:all": {
                 "productID": DEVICE_TYPE_ID,
                 "productInstanceAttributes": {
-                    "deviceSerialNumber": "001"
+                    "deviceSerialNumber": "13141"
                 }
             }
         })
@@ -32,7 +32,7 @@ class Start(object):
         raise cherrypy.HTTPRedirect(p.url)
 
     def authresponse(self, var=None, **params):
-        code = urllib.quote(cherrypy.request.params['code'])
+        code = urllib.parse.quote(cherrypy.request.params['code'])
         callback = cherrypy.url()
         payload = {
             "client_id": CLIENT_ID, 
